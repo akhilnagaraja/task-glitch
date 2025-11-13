@@ -60,15 +60,16 @@ export default function TaskForm({ open, onClose, onSubmit, existingTitles, init
   }, [title, existingTitles, initial]);
 
   const canSubmit =
-    !!title.trim() &&
-    !duplicateTitle &&
-    typeof revenue === 'number' && revenue >= 0 &&
-    typeof timeTaken === 'number' && timeTaken > 0 &&
-    !!priority &&
-    !!status;
+  !!title.trim() &&
+  !duplicateTitle &&
+  typeof revenue === 'number' && revenue >= 0 &&
+  typeof timeTaken === 'number' && timeTaken >= 0 && // allow zero
+  !!priority &&
+  !!status;
+
 
   const handleSubmit = () => {
-    const safeTime = typeof timeTaken === 'number' && timeTaken > 0 ? timeTaken : 1; // auto-correct
+    const safeTime = typeof timeTaken === 'number' ? timeTaken : 0;
     const payload: Omit<Task, 'id'> & { id?: string } = {
       title: title.trim(),
       revenue: typeof revenue === 'number' ? revenue : 0,
@@ -107,14 +108,23 @@ export default function TaskForm({ open, onClose, onSubmit, existingTitles, init
               fullWidth
             />
             <TextField
-              label="Time Taken (h)"
-              type="number"
+               label="Time Taken (h)"
+               type="number"
               value={timeTaken}
-              onChange={e => setTimeTaken(e.target.value === '' ? '' : Number(e.target.value))}
-              inputProps={{ min: 1, step: 1 }}
-              required
+              onChange={e => {
+                 const v = e.target.value;
+                 if (v === '') {
+                  setTimeTaken('');
+                  return;
+                   }
+             const n = Number(v);
+              setTimeTaken(Number.isNaN(n) ? '' : n);
+              }}
+              inputProps={{ min: 0, step: 0.01 }}
+             required
               fullWidth
-            />
+              />
+
           </Stack>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <FormControl fullWidth required>
