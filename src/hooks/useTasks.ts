@@ -50,7 +50,7 @@ export function useTasks(): UseTasksState {
         id: t.id,
         title: t.title,
         revenue: Number(t.revenue) ?? 0,
-        timeTaken: Number(t.timeTaken) > 0 ? Number(t.timeTaken) : 1,
+        timeTaken: Number.isFinite(Number(t.timeTaken)) && Number(t.timeTaken) >= 0 ? Number(t.timeTaken) : 0,
         priority: t.priority,
         status: t.status,
         notes: t.notes,
@@ -151,7 +151,7 @@ export function useTasks(): UseTasksState {
         return merged;
       });
       // Ensure timeTaken remains > 0
-      return next.map(t => (t.id === id && (patch.timeTaken ?? t.timeTaken) <= 0 ? { ...t, timeTaken: 1 } : t));
+      return next.map(t => (t.id === id ? { ...t, ...(patch.timeTaken !== undefined ? { timeTaken: Number(patch.timeTaken) } : {}) } : t));
     });
   }, []);
 
@@ -165,11 +165,11 @@ export function useTasks(): UseTasksState {
 
   const undoDelete = useCallback(() => {
     if (!lastDeleted) return;
-    setTasks(prev => [...prev, lastDeleted]);
+    setTasks(prev => [lastDeleted, ...prev]);
     setLastDeleted(null);
   }, [lastDeleted]);
-
-  return { tasks, loading, error, derivedSorted, metrics, lastDeleted, addTask, updateTask, deleteTask, undoDelete };
+  const clearLastDeleted = () => setLastDeleted(null);
+    return { tasks, loading, error, derivedSorted, metrics, lastDeleted, addTask, updateTask, deleteTask, undoDelete, clearLastDeleted };
 }
 
 

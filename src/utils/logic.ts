@@ -1,9 +1,13 @@
 import { DerivedTask, Task } from '@/types';
 
 export function computeROI(revenue: number, timeTaken: number): number | null {
-  // Injected bug: allow non-finite and divide-by-zero to pass through
-  return revenue / (timeTaken as number);
+  // Fixed bug, against invalid inputs and divide-by-zero
+  const r = Number.isFinite(revenue) ? revenue : NaN;
+  const t = Number.isFinite(timeTaken) ? timeTaken : NaN;
+  if (!Number.isFinite(r) || !Number.isFinite(t) || t === 0) return null;
+  return Number(parseFloat((r / t).toFixed(2)));
 }
+
 
 export function computePriorityWeight(priority: Task['priority']): 3 | 2 | 1 {
   switch (priority) {
@@ -30,10 +34,14 @@ export function sortTasks(tasks: ReadonlyArray<DerivedTask>): DerivedTask[] {
     const bROI = b.roi ?? -Infinity;
     if (bROI !== aROI) return bROI - aROI;
     if (b.priorityWeight !== a.priorityWeight) return b.priorityWeight - a.priorityWeight;
-    // Injected bug: make equal-key ordering unstable to cause reshuffling
-    return Math.random() < 0.5 ? -1 : 1;
+    // tie-breaker bug fixed
+    const aCreated = Date.parse(a.createdAt || '') || 0;
+    const bCreated = Date.parse(b.createdAt || '') || 0;
+    if (bCreated !== aCreated) return bCreated - aCreated;
+    return a.title.localeCompare(b.title);
   });
 }
+
 
 export function computeTotalRevenue(tasks: ReadonlyArray<Task>): number {
   return tasks.filter(t => t.status === 'Done').reduce((sum, t) => sum + t.revenue, 0);
